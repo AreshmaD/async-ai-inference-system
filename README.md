@@ -96,6 +96,7 @@ docker push 394757036844.dkr.ecr.us-east-1.amazonaws.com/ml-consumer:latest
 6. Kubernetes deployment
 
 The Kubernetes deployment YAML is included in:
+
 	•	k8s/consumer-deployment.yaml
 
 ## Results
