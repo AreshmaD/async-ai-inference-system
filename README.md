@@ -44,6 +44,7 @@ The system trains a breast cancer classification model, stores it in S3, sends i
 }
 ```
 ## Files Included
+
 	•	dags/train_model_dag.py
 	•	dags/enqueue_inference_dag.py
 	•	consumer/app.py
@@ -56,15 +57,18 @@ The system trains a breast cancer classification model, stores it in S3, sends i
 1. Train the model
 
 Run the Airflow training DAG:
+
 	•	train_model_to_s3
 
 This stores:
+
 	•	models/model.pkl
 	•	artifacts/test_records.jsonl
 
 2. Enqueue inference jobs
 
 Run the Airflow queue population DAG:
+
 	•	enqueue_inference_jobs
 
 This sends one SQS message per test record.
@@ -97,6 +101,7 @@ The Kubernetes deployment YAML is included in:
 ## Results
 
 The system successfully:
+
 	•	trained a model
 	•	saved the model to S3
 	•	stored the test dataset in S3
@@ -105,10 +110,11 @@ The system successfully:
 	•	wrote prediction files to S3
 
 Example prediction files:
+
 	•	predictions/sample_000.json
 	•	predictions/sample_001.json
 
-Kubernetes Limitation
+## Kubernetes Limitation
 
 A Kubernetes Deployment YAML was created and the Docker image was pushed to Amazon ECR.
 
