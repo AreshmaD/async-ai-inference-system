@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sqs-ml-consumer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sqs-ml-consumer
+  template:
+    metadata:
+      labels:
+        app: sqs-ml-consumer
+    spec:
+      containers:
+        - name: consumer
+          image: 394757036844.dkr.ecr.us-east-1.amazonaws.com/ml-consumer:latest
+          env:
+            - name: AWS_REGION
+              value: "us-east-1"
+            - name: BUCKET_NAME
+              value: "reshma-async-ml-project-2026"
+            - name: MODEL_KEY
+              value: "models/model.pkl"
+            - name: QUEUE_URL
+              value: "https://sqs.us-east-1.amazonaws.com/394757036844/ml-inference-queue"

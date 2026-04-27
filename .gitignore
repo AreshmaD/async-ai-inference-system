@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+airflow-venv/
+.env
+.DS_Store
