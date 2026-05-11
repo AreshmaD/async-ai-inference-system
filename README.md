@@ -5,6 +5,57 @@ This project builds a simple asynchronous machine learning inference pipeline us
 
 The system trains a breast cancer classification model, stores it in S3, sends inference jobs to SQS, and processes them asynchronously with a containerized consumer.
 
+## Technologies Used
+
+- Apache Airflow
+
+- Amazon S3
+
+- Amazon SQS
+
+- Docker
+
+- Amazon ECR
+
+- Amazon ECS
+
+- Python
+
+- scikit-learn
+
+- boto3
+
+- joblib
+
+- NumPy
+
+## Project Structure
+
+```text
+
+final_project/
+
+├── README.md
+
+├── consumer/
+
+│   ├── app.py
+
+│   ├── requirements.txt
+
+│   └── Dockerfile
+
+├── dags/
+
+│   ├── train_model_dag.py
+
+│   └── enqueue_inference_dag.py
+
+└── k8s/
+
+    └── consumer-deployment.yaml
+```
+---
 ## System Architecture
 
 ### Training Flow
@@ -63,32 +114,59 @@ The system trains a breast cancer classification model, stores it in S3, sends i
 	•   README.md
 	 
 
-## How to Run
+## Run Instructions
+1. Activate the Airflow Virtual environment
+   
+From Cloud9, go to the environmeny folder and activate the Airflow virtual environment:
+```bash
+   cd ~/environment
+   source airflow-venv/bin/activate
+   export AIRFLOW_HOME=~/environment/airflow
+```
 
-1. Train the model
-
+2. Train the model
+   
 Run the Airflow training DAG:
+```
+	airflow tasks test train_model_to_s3 train_and_upload_model 2026-04-26
+```
 
-	•	train_model_to_s3
+This step:
+* loads the breast cancer dataset
+* splits it into training and testing sets
+* trains the model
+* stores the trained model in S3 as models/model.pkl
+* stores the test dataset in S3 as artifacts/test_records.jsonl
+  
+Verify the outputs with:
+```
+aws s3 ls s3://reshma-async-ml-project-2026/models/
+aws s3 ls s3://reshma-async-ml-project-2026/artifacts/
+```
 
-This stores:
-
-	•	models/model.pkl
-	•	artifacts/test_records.jsonl
-
-2. Enqueue inference jobs
-
+3. Enqueue inference jobs
+   
 Run the Airflow queue population DAG:
-
-	•	enqueue_inference_jobs
-
+```
+airflow tasks test enqueue_inference_jobs send_test_records_to_sqs 2026-04-26
+```
 This sends one SQS message per test record.
 
-3. Build the consumer container 
-``` 
+Verify  the queue with:
+```
+aws sqs get-queue-attributes \
+  --queue-url https://sqs.us-east-1.amazonaws.com/394757036844/ml-inference-queue \
+  --attribute-names ApproximateNumberOfMessages
+```
+
+4. Build the consumer container
+   
+Go to the consumer folder and build the Docker image:
+```
+cd ~/environment/final_project/consumer
 docker build -t ml-consumer:latest .
 ```
-4. Run consumer locally
+5. Run consumer locally
 ```
 docker run --rm \
   -e AWS_REGION=us-east-1 \
@@ -98,33 +176,23 @@ docker run --rm \
   -v ~/.aws:/root/.aws \
   ml-consumer:latest
 ```
-5. Push image to ECR
+The consumer will:
+* poll SQS
+* load the trained model from S3
+* perform inference
+* write one JSON prediction file per record to S3
+* delete the message only after successful processing
+
+Verify prediction outputs
+```
+aws s3 ls s3://reshma-async-ml-project-2026/predictions/ | head
+aws s3 cp s3://reshma-async-ml-project-2026/predictions/sample_000.json -
+```
+6. Push image to ECR
 ```
 docker tag ml-consumer:latest 394757036844.dkr.ecr.us-east-1.amazonaws.com/ml-consumer:latest
 docker push 394757036844.dkr.ecr.us-east-1.amazonaws.com/ml-consumer:latest
 ```
-
-6. Kubernetes deployment
-
-The Kubernetes deployment YAML is included in:
-
-	•	k8s/consumer-deployment.yaml
-
-## Results
-
-The system successfully:
-
-	•	trained a model
-	•	saved the model to S3
-	•	stored the test dataset in S3
-	•	sent one message per record to SQS
-	•	processed messages with the consumer
-	•	wrote prediction files to S3
-
-Example prediction files:
-
-	•	predictions/sample_000.json
-	•	predictions/sample_001.json
 
 ## Deployment Approach
 
